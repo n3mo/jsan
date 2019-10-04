@@ -5,6 +5,44 @@ The **J**SON **S**wiss **A**rmy k**N**ife. Convert, subset, repurpose, and other
 
 Because `jsan` can also write to standard output, it can also serve as a useful exploration tool for quickly exploring JSON data (e.g., pulling user names across all entries). Output can be piped to other common command line tools (e.g., awk) as in traditional unix-like workflows.
 
+## Usage Examples
+
+**For usage help:**
+
+    jsan --help
+
+**Scrape the data fields "text" and "created_on" while writing to standard output:**
+
+    jsan --input=mydata.json --key text created_on
+
+**Nested JSON data fields can be accessed by using "::" . To keep the fields user->screen_name and user->bio->address**
+
+    jsan --input=mydata.json --key user::screen_name user::bio::address
+
+**Use pipes to use the output of other commands as input:**
+
+    cat mydata.json | jsan
+
+**Combine and get creative. Let's list all users whose screen names start with "M":**
+
+    cat mydata.json | jsan -k user::screen_name | grep '^"m'
+
+**Same as above, but dump the results into a file called names.txt**
+
+    cat mydata.json | jsan -k user::screen_name | grep '^"m' > names.txt
+
+**Buffered reading and writing is supported (from/to disk or stdin/stdout)**
+
+    jsan -i mydata.json -k user::screen_name -o names.txt
+
+**The delimeter can optionally be set (default = ","):**
+
+    jsan --delimeter=';'
+
+**A header with "column" names is output by default. Suppress with:**
+
+    jsan --noheader
+
 ## License
 
 Copyright (C) 2019 Nicholas M. Van Horn
