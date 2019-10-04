@@ -9,15 +9,21 @@ fn main() -> std::io::Result<()> {
 
     // Command line parsing with clap
     let args = App::new("jsan -- The JSON Swiss Army kNife")
-        .version("0.0.1")
+        .version("0.1.0")
         .author("Nicholas M. Van Horn (nvanhorn@protonmail.com)")
         .about("A fast JSON scraping tool")
-        .arg(Arg::with_name("field")
-             .short("f")
-             .long("field")
-             .help("JSON field(s) to scrape")
+        .arg(Arg::with_name("key")
+             .short("k")
+             .long("key")
+             .help("JSON key(s) to scrape")
              .required(true)
              .min_values(1)
+             .takes_value(true))
+        .arg(Arg::with_name("delimeter")
+             .short("d")
+             .long("delimeter")
+             .help("Delimeter string (default = \",\")")
+             .max_values(1)
              .takes_value(true))
         .arg(Arg::with_name("input")
              .short("i")
@@ -31,9 +37,16 @@ fn main() -> std::io::Result<()> {
              .takes_value(true))
         .arg(Arg::with_name("noheader")
              .long("noheader")
-             .help("Suppress Column Name Headers")
+             .help("Suppress column name headers")
              .takes_value(false))
         .get_matches();
+
+    // Delimeter sequence
+    // let delimeter = match args.is_present("delimeter") {
+    //     true => args.value_of("delimeter").to_string().as_bytes(),
+    //     false => b",",
+    // };
+    let delimeter = args.value_of("delimeter").unwrap_or(",");
 
     // If the user has specified an input file, read from
     // it. Otherwise, read from stdin
@@ -49,8 +62,8 @@ fn main() -> std::io::Result<()> {
         false => Box::new(io::stdout()),
     };
 
-    let json_fields: Vec<&str> = args.values_of("field").unwrap().collect();
-    let num_fields = json_fields.len();
+    let json_keys: Vec<&str> = args.values_of("key").unwrap().collect();
+    let num_keys = json_keys.len();
     
     let reader = BufReader::new(rdr);
     // let mut writer = BufWriter::new(io::stdout());
@@ -59,10 +72,10 @@ fn main() -> std::io::Result<()> {
     // Write column headers to file?
     match args.is_present("noheader") {
         false => {
-            for i in 0..num_fields {
-                writer.write(json_fields[i].as_bytes()).expect("Bad JSON field");
-                if i < num_fields - 1 {
-                    writer.write(b",").unwrap();
+            for i in 0..num_keys {
+                writer.write(json_keys[i].as_bytes()).expect("Bad JSON key");
+                if i < num_keys - 1 {
+                    writer.write(delimeter.as_bytes()).unwrap();
                 }
             }
             writer.write(b"\n").unwrap();
@@ -78,22 +91,22 @@ fn main() -> std::io::Result<()> {
                 // Parse the current line's JSON string
                 let v: Value = serde_json::from_str(&line)?;
 
-                // Parse and write each requested JSON field
-                // for field in json_fields {
-                for i in 0..num_fields {
+                // Parse and write each requested JSON key
+                // for key in json_keys {
+                for i in 0..num_keys {
 
                     let mut child = v.clone();
                     let mut child2 = child.clone();
                     
-                    for idx in json_fields[i].split("::") {
+                    for idx in json_keys[i].split("::") {
                         child2.clone_from(&child[idx]);
                         child.clone_from(&child2);
                     }
 
                     writer.write(child.to_string().as_bytes())
                         .expect("Error: Malformed JSON?");
-                    if i < num_fields - 1 {
-                        writer.write(b",").unwrap();
+                    if i < num_keys - 1 {
+                        writer.write(delimeter.as_bytes()).unwrap();
                     }
                 }
                 writer.write(b"\n").unwrap();
