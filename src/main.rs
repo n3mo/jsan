@@ -29,6 +29,10 @@ fn main() -> std::io::Result<()> {
              .long("output")
              .help("Optional output file (else stdout)")
              .takes_value(true))
+        .arg(Arg::with_name("noheader")
+             .long("noheader")
+             .help("Suppress Column Name Headers")
+             .takes_value(false))
         .get_matches();
 
     // If the user has specified an input file, read from
@@ -51,6 +55,20 @@ fn main() -> std::io::Result<()> {
     let reader = BufReader::new(rdr);
     // let mut writer = BufWriter::new(io::stdout());
     let mut writer = BufWriter::new(wtr);
+
+    // Write column headers to file?
+    match args.is_present("noheader") {
+        false => {
+            for i in 0..num_fields {
+                writer.write(json_fields[i].as_bytes()).expect("Bad JSON field");
+                if i < num_fields - 1 {
+                    writer.write(b",").unwrap();
+                }
+            }
+            writer.write(b"\n").unwrap();
+        },
+        true => (),
+    }
 
     // Work across the file line-by-line, using buffered reading
     // and writing
