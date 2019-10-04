@@ -15,14 +15,19 @@ fn main() -> std::io::Result<()> {
         .arg(Arg::with_name("field")
              .short("f")
              .long("field")
-             .help("Desired JSON fields to scrape")
+             .help("JSON field(s) to scrape")
              .required(true)
              .min_values(1)
              .takes_value(true))
         .arg(Arg::with_name("input")
              .short("i")
              .long("input")
-             .help("Sets the input file to use")
+             .help("Optional input file (else stdin)")
+             .takes_value(true))
+        .arg(Arg::with_name("output")
+             .short("o")
+             .long("output")
+             .help("Optional output file (else stdout)")
              .takes_value(true))
         .get_matches();
 
@@ -33,11 +38,19 @@ fn main() -> std::io::Result<()> {
         false => Box::new(io::stdin()),
     };
 
+    // If the user has specified an output file, write to
+    // it. Otherwise, write to stdin
+    let wtr: Box<dyn io::Write> = match args.is_present("output") {
+        true => Box::new(File::create(args.value_of("output").unwrap()).unwrap()),
+        false => Box::new(io::stdout()),
+    };
+
     let json_fields: Vec<&str> = args.values_of("field").unwrap().collect();
     let num_fields = json_fields.len();
     
     let reader = BufReader::new(rdr);
-    let mut writer = BufWriter::new(io::stdout());
+    // let mut writer = BufWriter::new(io::stdout());
+    let mut writer = BufWriter::new(wtr);
 
     // Work across the file line-by-line, using buffered reading
     // and writing
